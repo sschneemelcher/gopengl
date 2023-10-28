@@ -3,8 +3,9 @@ package shaders
 const VertexShaderSource = `
 	#version 410 core
 
-	layout(location = 0) in vec3 inPosition;
-
+	layout(location = 0)
+	 
+	in vec3 inPosition;
 	out vec3 FragPos;
 
 	void main()
@@ -23,7 +24,7 @@ const FragmentShaderSource = `
 	void main()
 	{
 	    // Calculate the color based on the fragment's position
-	    vec3 color = vec3(abs(FragPos.x), abs(FragPos.y), abs(FragPos.z));
+	    vec3 color = vec3(abs(FragPos.x), abs(FragPos.y), abs(FragPos.x + FragPos.y));
     
 	    // Output the color
 	    FragColor = vec4(color, 1.0);
