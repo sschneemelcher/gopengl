@@ -54,6 +54,47 @@ func getTriangle(x, y, width, height int) uint32 {
 	return utils.CreateVAO(vertices)
 }
 
+func getLeftTriangle(x, y, width, height int) uint32 {
+	triangleX := float32(x)/windowWidth - 1
+	triangleY := 1 - float32(y)/windowHeight
+	widthFloat := 2 * (float32(width) / windowWidth)
+	heightFloat := 2 * (float32(height) / windowHeight)
+
+	var vertices = []float32{
+		triangleX, triangleY - heightFloat,
+		triangleX + widthFloat, triangleY - heightFloat,
+		triangleX, triangleY,
+	}
+
+	return utils.CreateVAO(vertices)
+}
+
+func getRightTriangle(x, y, width, height int) uint32 {
+	triangleX := float32(x)/windowWidth - 1
+	triangleY := 1 - float32(y)/windowHeight
+	widthFloat := 2 * (float32(width) / windowWidth)
+	heightFloat := 2 * (float32(height) / windowHeight)
+
+	var vertices = []float32{
+		triangleX, triangleY,
+		triangleX + widthFloat, triangleY - heightFloat,
+		triangleX + widthFloat, triangleY,
+	}
+
+	return utils.CreateVAO(vertices)
+}
+
+func drawSquare(x, y, width, height int) {
+	leftTriangle := getLeftTriangle(x, y, width, height)
+	rightTriangle := getRightTriangle(x, y, width, height)
+
+	gl.BindVertexArray(leftTriangle)
+	gl.DrawArrays(gl.TRIANGLES, 0, 3)
+	gl.BindVertexArray(rightTriangle)
+	gl.DrawArrays(gl.TRIANGLES, 0, 3)
+	gl.BindVertexArray(0)
+}
+
 func programLoop(window *glfw.Window) {
 	shaderProgram, err := utils.CreateShaderProgram(shaders.VertexShaderSource, shaders.FragmentShaderSource)
 	if err != nil {
@@ -75,14 +116,11 @@ func programLoop(window *glfw.Window) {
 			triangleX += moveSpeed
 		}
 
-		triangle := getTriangle(triangleX, triangleY, 300, 200)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 		// Render the triangle using the VAO
 		gl.UseProgram(shaderProgram)
-		gl.BindVertexArray(triangle)
-		gl.DrawArrays(gl.TRIANGLES, 0, 3)
-		gl.BindVertexArray(0)
+		drawSquare(triangleX, triangleY, 400, 400)
 
 		// Swap buffers, poll events, etc.
 		window.SwapBuffers()
