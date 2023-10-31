@@ -2,18 +2,20 @@ package main
 
 import (
 	"log"
+	"time"
 
 	"runtime"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
+	"schneemelcher.com/gopengl/internal/input"
+	"schneemelcher.com/gopengl/internal/settings"
 	"schneemelcher.com/gopengl/internal/shaders"
 	"schneemelcher.com/gopengl/internal/utils"
 )
 
-const (
-	windowWidth  = 1200
-	windowHeight = 800
+var (
+	triangleX, triangleY int
 )
 
 func init() {
@@ -26,7 +28,7 @@ func main() {
 	}
 	defer glfw.Terminate()
 
-	window := utils.CreateWindow(windowWidth, windowHeight)
+	window := utils.CreateWindow(settings.WindowWidth, settings.WindowHeight)
 
 	// Initialize Glow
 	if err := gl.Init(); err != nil {
@@ -39,126 +41,51 @@ func main() {
 	programLoop(window)
 }
 
-func getTriangle(x, y, width, height int) uint32 {
-	triangleX := float32(x)/windowWidth - 1
-	triangleY := 1 - float32(y)/windowHeight
-	widthFloat := 2 * (float32(width) / windowWidth)
-	heightFloat := 2 * (float32(height) / windowHeight)
-
-	var vertices = []float32{
-		triangleX, triangleY - heightFloat,
-		triangleX + widthFloat, triangleY - heightFloat,
-		triangleX + widthFloat/2, triangleY,
-	}
-
-	return utils.CreateVAO(vertices)
-}
-
-func getLeftTriangle(x, y, width, height int) uint32 {
-	triangleX := float32(x)/windowWidth - 1
-	triangleY := 1 - float32(y)/windowHeight
-	widthFloat := 2 * (float32(width) / windowWidth)
-	heightFloat := 2 * (float32(height) / windowHeight)
-
-	var vertices = []float32{
-		triangleX, triangleY - heightFloat,
-		triangleX + widthFloat, triangleY - heightFloat,
-		triangleX, triangleY,
-	}
-
-	return utils.CreateVAO(vertices)
-}
-
-func getRightTriangle(x, y, width, height int) uint32 {
-	triangleX := float32(x)/windowWidth - 1
-	triangleY := 1 - float32(y)/windowHeight
-	widthFloat := 2 * (float32(width) / windowWidth)
-	heightFloat := 2 * (float32(height) / windowHeight)
-
-	var vertices = []float32{
-		triangleX, triangleY,
-		triangleX + widthFloat, triangleY - heightFloat,
-		triangleX + widthFloat, triangleY,
-	}
-
-	return utils.CreateVAO(vertices)
-}
-
-func drawSquare(x, y, width, height int) {
-	leftTriangle := getLeftTriangle(x, y, width, height)
-	rightTriangle := getRightTriangle(x, y, width, height)
-
-	gl.BindVertexArray(leftTriangle)
-	gl.DrawArrays(gl.TRIANGLES, 0, 3)
-	gl.BindVertexArray(rightTriangle)
-	gl.DrawArrays(gl.TRIANGLES, 0, 3)
-	gl.BindVertexArray(0)
-}
+const targetFps = 60
 
 func programLoop(window *glfw.Window) {
 	shaderProgram, err := utils.CreateShaderProgram(shaders.VertexShaderSource, shaders.FragmentShaderSource)
 	if err != nil {
 		panic(err)
 	}
-	window.SetKeyCallback(keyCallback)
+	window.SetKeyCallback(input.KeyCallback)
 
+	previousTime := glfw.GetTime()
 	for !window.ShouldClose() {
-		if upPressed {
-			triangleY -= moveSpeed
+		currentTime := glfw.GetTime()
+		deltaTime := currentTime - previousTime
+		previousTime = currentTime
+
+		log.Println(1 / deltaTime)
+
+		if input.UpPressed {
+			triangleY -= settings.MoveSpeed
 		}
-		if downPressed {
-			triangleY += moveSpeed
+		if input.DownPressed {
+			triangleY += settings.MoveSpeed
 		}
-		if leftPressed {
-			triangleX -= moveSpeed
+		if input.LeftPressed {
+			triangleX -= settings.MoveSpeed
 		}
-		if rightPressed {
-			triangleX += moveSpeed
+		if input.RightPressed {
+			triangleX += settings.MoveSpeed
 		}
 
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 		// Render the triangle using the VAO
 		gl.UseProgram(shaderProgram)
-		drawSquare(triangleX, triangleY, 400, 400)
+		utils.DrawSquare(triangleX, triangleY, 20, 400)
 
 		// Swap buffers, poll events, etc.
 		window.SwapBuffers()
 		glfw.PollEvents()
-	}
-}
 
-var (
-	triangleX, triangleY                              int
-	moveSpeed                                         int = 10
-	upPressed, downPressed, leftPressed, rightPressed bool
-)
+		targetFrameTime := 1.0 / targetFps
+		sleepTime := targetFrameTime - deltaTime
 
-func keyCallback(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
-	switch key {
-	case glfw.KeyW:
-		if action == glfw.Press {
-			upPressed = true
-		} else if action == glfw.Release {
-			upPressed = false
-		}
-	case glfw.KeyS:
-		if action == glfw.Press {
-			downPressed = true
-		} else if action == glfw.Release {
-			downPressed = false
-		}
-	case glfw.KeyA:
-		if action == glfw.Press {
-			leftPressed = true
-		} else if action == glfw.Release {
-			leftPressed = false
-		}
-	case glfw.KeyD:
-		if action == glfw.Press {
-			rightPressed = true
-		} else if action == glfw.Release {
-			rightPressed = false
+		if sleepTime > 0 {
+			time.Sleep(time.Duration(sleepTime * float64(time.Second)))
 		}
 	}
 }
